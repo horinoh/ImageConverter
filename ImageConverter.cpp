@@ -555,6 +555,9 @@ public:
 								if ("TILESET" == Items[0]) {
 									ProcessTileSet(Items[1], FilePath, size(Items) > 3 ? Items[3] : "", size(Items) > 4 ? Items[4] : "");
 								}
+								if ("ITILESET" == Items[0]) {
+									ProcessImageTileSet(Items[1], FilePath, size(Items) > 3 ? Items[3] : "", size(Items) > 4 ? Items[4] : "");
+								}
 								if ("MAP" == Items[0]) {
 									uint32_t MapBase = 0;
 									if (size(Items) > 5) {
@@ -562,6 +565,14 @@ public:
 										if (std::errc() != ec) {}
 									}
 									ProcessMap(Items[1], FilePath, Items[3], size(Items) > 4 ? Items[4] : "", MapBase);
+								}
+								if ("IMAP" == Items[0]) {
+									uint32_t MapBase = 0;
+									if (size(Items) > 5) {
+										auto [ptr, ec] = std::from_chars(data(Items[5]), data(Items[5]) + size(Items[5]), MapBase);
+										if (std::errc() != ec) {}
+									}
+									ProcessImageMap(Items[1], FilePath, Items[3], size(Items) > 4 ? Items[4] : "", MapBase);
 								}
 								if ("SPRITE" == Items[0]) {
 									uint32_t Width = 0;
@@ -596,7 +607,9 @@ public:
 	}
 	virtual void ProcessPalette(std::string_view Name, std::string_view File) {}
 	virtual void ProcessTileSet(std::string_view Name, std::string_view File, [[maybe_unused]] std::string_view Compression, [[maybe_unused]] std::string_view Option) {}
+	virtual void ProcessImageTileSet(std::string_view Name, std::string_view File, [[maybe_unused]] std::string_view Compression, [[maybe_unused]] std::string_view Option) {}
 	virtual void ProcessMap(std::string_view Name, std::string_view File, std::string_view TileSet, [[maybe_unused]] std::string_view Compression, [[maybe_unused]] const uint32_t Mapbase) {}
+	virtual void ProcessImageMap(std::string_view Name, std::string_view File, std::string_view TileSet, [[maybe_unused]] std::string_view Compression, [[maybe_unused]] const uint32_t Mapbase) {}
 	virtual void ProcessSprite(std::string_view Name, std::string_view File, const uint32_t Width, const uint32_t Height, [[maybe_unused]] std::string_view Compression, [[maybe_unused]] const uint32_t Time, [[maybe_unused]] std::string_view Collision, [[maybe_unused]] std::string_view Option, [[maybe_unused]] const uint32_t Iteration) {}
 
 	virtual void Clear(std::string_view Name) {
@@ -997,26 +1010,29 @@ namespace PCE
 			if (!empty(File)) {
 				auto Image = cv::imread(data(File));
 				std::cout << "[ Output Pattern ] " << Name << " (" << File << ")" << std::endl;
-
-#if 0
+				BG::Converter<>(Image).Create().OutputPattern(Name).OutputPatternPalette(Name).RestorePattern();
+			}
+		}
+		virtual void ProcessImageTileSet(std::string_view Name, std::string_view File, [[maybe_unused]] std::string_view Compression, [[maybe_unused]] std::string_view Option) override {
+			if (!empty(File)) {
+				auto Image = cv::imread(data(File));
+				std::cout << "[ Output Pattern ] " << Name << " (" << File << ")" << std::endl;
 				//!< イメージの場合はパターンが全部異なったりするので、マップ(BAT) を復元するのと大して変わらない
 				Image::Converter<>(Image).Create().OutputPattern(Name);
-#else
-				BG::Converter<>(Image).Create().OutputPattern(Name).OutputPatternPalette(Name).RestorePattern();
-#endif
 			}
 		}
 		virtual void ProcessMap(std::string_view Name, std::string_view File, std::string_view TileSet, [[maybe_unused]] std::string_view Compression, [[maybe_unused]] const uint32_t Mapbase) override {
 			if (!empty(File)) {
 				auto Image = cv::imread(data(File));
-
-#if 0
-				std::cout << "[ Output BAT ] " << Name << " (" << File << ")" << std::endl;
-				Image::Converter<>(Image).Create().OutputBAT(Name).RestoreMap();
-#else
 				std::cout << "[ Output Map ] " << Name << " (" << File << ")" << std::endl;
 				BG::Converter<>(Image).Create().OutputMap(Name).RestoreMap();
-#endif
+			}
+		}
+		virtual void ProcessImageMap(std::string_view Name, std::string_view File, std::string_view TileSet, [[maybe_unused]] std::string_view Compression, [[maybe_unused]] const uint32_t Mapbase) override {
+			if (!empty(File)) {
+				auto Image = cv::imread(data(File));
+				std::cout << "[ Output BAT ] " << Name << " (" << File << ")" << std::endl;
+				Image::Converter<>(Image).Create().OutputBAT(Name).RestoreMap();
 			}
 		}
 		virtual void ProcessSprite(std::string_view Name, std::string_view File, const uint32_t Width, const uint32_t Height, [[maybe_unused]] std::string_view Compression, [[maybe_unused]] const uint32_t Time, [[maybe_unused]] std::string_view Collision, [[maybe_unused]] std::string_view Option, [[maybe_unused]] const uint32_t Iteration) override {
@@ -1612,40 +1628,80 @@ namespace GB
 
 int main(const int argc, const char *argv[])
 {
-	std::string Path = ".";
+	std::string Path = ".\\res";
 	if (2 < argc) {
 		Path = argv[2];
 	}
+	std::cout << Path << std::endl;
 
+	enum PLATFORM {
+		PCE,
+		FC,
+		GB,
+		GBC,
+	};
+	auto Platform = PCE;
 	if (1 < argc) {
 		std::string Option;
 		std::ranges::transform(std::string_view(argv[1]), std::back_inserter(Option), [](const char rhs) { return std::toupper(rhs, std::locale("")); });
 
 		//!< C++23 なら contains() が使えるみたい
 		if (std::string_view::npos != Option.find("PCE")) {
-			std::cout << "PCE" << " " << Path << std::endl;
-			PCE::ResourceReader rr;
-			rr.Read(Path);
+			Platform = PCE;
 		}
 		else if (std::string_view::npos != Option.find("FC")) {
-			std::cout << "FC" << " " << Path << std::endl;
+			Platform = FC;
 			FC::ResourceReader rr;
 			rr.Read(Path);
 		}
 		else if (std::string_view::npos != Option.find("GBC") || std::string_view::npos != Option.find("CGB")) {
-			std::cout << "GBC" << " " << Path << std::endl;
+			Platform = GBC;
 			//GBC::ResourceReader rr;
 			//rr.Read(Path);
 		}
 		else if (std::string_view::npos != Option.find("GB")) {
-			std::cout << "GB" << " " << Path << std::endl;
+			Platform = GB;
 			GB::ResourceReader rr;
 			rr.Read(Path);
 		}
 		else if (std::string_view::npos != Option.find("HELP")) {
 			std::cout << "Usage : " << std::filesystem::path(argv[0]).filename().string() << " " << "[Platform]" << " " << "[Resource folder]" << std::endl;
 			std::cout << "\tPlatform : PCE, FC, GB, CGB(GBC)" << std::endl;
+
+			return 0;
 		}
+	}
+	switch (Platform) {
+	case PCE:
+	{
+		std::cout << "Platform : PCE" << std::endl;
+		PCE::ResourceReader rr;
+		rr.Read(Path);
+	}
+		break;
+	case FC:
+	{
+		std::cout << "Platform : FC" << std::endl;
+		FC::ResourceReader rr;
+		rr.Read(Path);
+	}
+	break;
+	case GB:
+	{
+		std::cout << "Platform : GB" << std::endl;
+		GB::ResourceReader rr;
+		rr.Read(Path);
+	}
+	break;
+	case GBC:
+	{
+		std::cout << "Platform : CGB(GBC)" << std::endl;
+		//GBC::ResourceReader rr;
+		//rr.Read(Path);
+	}
+	break;
+	default:
+		break;
 	}
 }
 
