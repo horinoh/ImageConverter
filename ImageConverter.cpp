@@ -1051,7 +1051,9 @@ namespace PCE
 					case 64:
 						Sprite::Converter<16, 64>(Image).Create().OutputPattern(Name).OutputAnimation(Name).RestorePattern();
 						break;
-					default: break;
+					default:
+						std::cerr << "Sprite size not supported" << std::endl;
+						break;
 					}
 					break;
 				case 32:
@@ -1065,10 +1067,14 @@ namespace PCE
 					case 64:
 						Sprite::Converter<32, 64>(Image).Create().OutputPattern(Name).OutputAnimation(Name).RestorePattern();
 						break;
-					default: break;
+					default:
+						std::cerr << "Sprite size not supported" << std::endl;
+						break;
 					}
 					break;
-				default: break;
+				default: 
+					std::cerr << "Sprite size not supported" << std::endl;
+					break;
 				}
 			}
 		}
@@ -1386,7 +1392,27 @@ namespace FC {
 			if (!empty(File)) {
 				auto Image = cv::imread(data(File));
 				std::cout << "[ Output Sprite ] " << Name << " (" << File << ")" << std::endl;
-				Sprite::Converter<8, 8>(Image).Create().OutputPattern(Name).OutputAnimation(Name).RestorePattern();
+
+				//!< 8x8 or 8x16
+				switch (Width << 3)
+				{
+				case 8:
+					switch (Height << 3) {
+					case 8:
+						Sprite::Converter<8, 8>(Image).Create().OutputPattern(Name).OutputAnimation(Name).RestorePattern();
+						break;
+					case 16:
+						Sprite::Converter<8, 16>(Image).Create().OutputPattern(Name).OutputAnimation(Name).RestorePattern();
+						break;
+					default:
+						std::cerr << "Sprite size not supported" << std::endl;
+						break;
+					}
+					break;
+				default:
+					std::cerr << "Sprite size not supported" << std::endl;
+					break;
+				}
 			}
 		}
 	};
@@ -1610,14 +1636,26 @@ namespace GB
 			if (!empty(File)) {
 				auto Image = cv::imread(data(File));
 				std::cout << "[ Output Sprite ] " << Name << " (" << File << ")" << std::endl;
+				std::cout << "[ Output Sprite ] " << Name << " (" << File << ")" << std::endl;
 
 				//!< 8x8 or 8x16
-				switch (Height << 3) {
+				switch (Width << 3)
+				{
 				case 8:
-					Sprite::Converter<8, 8>(Image).Create().OutputPattern(Name).OutputAnimation(Name).RestorePattern();
+					switch (Height << 3) {
+					case 8:
+						Sprite::Converter<8, 8>(Image).Create().OutputPattern(Name).OutputAnimation(Name).RestorePattern();
+						break;
+					case 16:
+						Sprite::Converter<8, 16>(Image).Create().OutputPattern(Name).OutputAnimation(Name).RestorePattern();
+						break;
+					default:
+						std::cerr << "Sprite size not supported" << std::endl;
+						break;
+					}
 					break;
-				case 16:
-					Sprite::Converter<8, 16>(Image).Create().OutputPattern(Name).OutputAnimation(Name).RestorePattern();
+				default:
+					std::cerr << "Sprite size not supported" << std::endl;
 					break;
 				}
 			}
@@ -1628,19 +1666,19 @@ namespace GB
 
 int main(const int argc, const char *argv[])
 {
-	std::string Path = ".\\res";
-	if (2 < argc) {
-		Path = argv[2];
-	}
-	std::cout << Path << std::endl;
-
 	enum PLATFORM {
 		PCE,
 		FC,
 		GB,
 		GBC,
 	};
-	auto Platform = PCE;
+	std::string Path = ".\\resGB";
+	auto Platform = GB;
+
+	if (2 < argc) {
+		Path = argv[2];
+	}
+	std::cout << Path << std::endl;
 	if (1 < argc) {
 		std::string Option;
 		std::ranges::transform(std::string_view(argv[1]), std::back_inserter(Option), [](const char rhs) { return std::toupper(rhs, std::locale("")); });
