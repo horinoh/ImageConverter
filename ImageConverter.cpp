@@ -696,7 +696,7 @@ namespace PCE
 						for (auto i = 0; i < size(Pat.ColorIndices); ++i) {
 							uint16_t Plane = 0;
 							for (auto j = 0; j < size(Pat.ColorIndices[i]); ++j) {
-								const auto ColorIndex = Pat.ColorIndices[i][j] + 1; //!< 先頭の透明色を考慮して + 1
+								const auto ColorIndex = Pat.ColorIndices[i][j] + this->GetPaletteReservedColorCount(); //!< 先頭の透明色を考慮
 								const auto ShiftL = 7 - j;
 								const auto ShiftU = ShiftL + 8;
 								const auto MaskL = 1 << ((pl << 1) + 0);
@@ -810,7 +810,7 @@ namespace PCE
 						for (auto i = 0; i < h; ++i) {
 							uint16_t Plane = 0;
 							for (auto j = 0; j < w; ++j) {
-								const auto ColorIndex = Pat.ColorIndices[i][j] + 1; //!< 先頭の透明色を考慮して + 1
+								const auto ColorIndex = Pat.ColorIndices[i][j] + this->GetPaletteReservedColorCount(); //!< 先頭の透明色を考慮
 								const auto ShiftL = 7 - j;
 								const auto ShiftU = ShiftL + 8;
 								const auto MaskL = 1 << ((pl << 1) + 0);
@@ -831,7 +831,7 @@ namespace PCE
 						for (auto i = 0; i < h; ++i) {
 							uint16_t Plane = 0;
 							for (auto j = 0; j < w; ++j) {
-								const auto ColorIndex = Pat.ColorIndices[i][j + w] + 1;
+								const auto ColorIndex = Pat.ColorIndices[i][j + w] + this->GetPaletteReservedColorCount();
 								const auto ShiftL = 7 - j;
 								const auto ShiftU = ShiftL + 8;
 								const auto MaskL = 1 << ((pl << 1) + 0);
@@ -852,7 +852,7 @@ namespace PCE
 						for (auto i = 0; i < h; ++i) {
 							uint16_t Plane = 0;
 							for (auto j = 0; j < w; ++j) {
-								const auto ColorIndex = Pat.ColorIndices[i + h][j] + 1;
+								const auto ColorIndex = Pat.ColorIndices[i + h][j] + this->GetPaletteReservedColorCount();
 								const auto ShiftL = 7 - j;
 								const auto ShiftU = ShiftL + 8;
 								const auto MaskL = 1 << ((pl << 1) + 0);
@@ -873,7 +873,7 @@ namespace PCE
 						for (auto i = 0; i < h; ++i) {
 							uint16_t Plane = 0;
 							for (auto j = 0; j < w; ++j) {
-								const auto ColorIndex = Pat.ColorIndices[i + h][j + w] + 1;
+								const auto ColorIndex = Pat.ColorIndices[i + h][j + w] + this->GetPaletteReservedColorCount();
 								const auto ShiftL = 7 - j;
 								const auto ShiftU = ShiftL + 8;
 								const auto MaskL = 1 << ((pl << 1) + 0);
@@ -967,7 +967,7 @@ namespace PCE
 						for (auto i = 0; i < size(Pat.ColorIndices); ++i) {
 							uint16_t Plane = 0;
 							for (auto j = 0; j < size(Pat.ColorIndices[i]); ++j) {
-								const auto ColorIndex = Pat.ColorIndices[i][j] + 1; //!< 先頭の透明色を考慮して + 1
+								const auto ColorIndex = Pat.ColorIndices[i][j] + this->GetPaletteReservedColorCount(); //!< 先頭の透明色を考慮
 								const auto Shift = 15 - j;
 								const auto Mask = 1 << pl;
 								Plane |= ((ColorIndex & Mask) ? 1 : 0) << Shift;
@@ -1239,7 +1239,7 @@ namespace FC {
 					for (auto i = 0; i < size(Pat.ColorIndices); ++i) {
 						uint8_t Plane = 0;
 						for (auto j = 0; j < size(Pat.ColorIndices[i]); ++j) {
-							const auto ColorIndex = Pat.ColorIndices[i][j] + 1; //!< 先頭の透明色を考慮して + 1
+							const auto ColorIndex = Pat.ColorIndices[i][j] + this->GetPaletteReservedColorCount(); //!< 先頭の透明色を考慮
 							const auto Shift = 7 - j;
 							const auto Mask = 1 << pl;
 							Plane |= ((ColorIndex & Mask) ? 1 : 0) << Shift;
@@ -1550,7 +1550,7 @@ namespace GB
 					for (auto pl = 0; pl < 2; ++pl) {
 						uint8_t Plane = 0;
 						for (auto j = 0; j < size(Pat.ColorIndices[i]); ++j) {
-							const auto ColorIndex = Pat.ColorIndices[i][j] + 1; //!< 先頭の透明色を考慮して + 1
+							const auto ColorIndex = Pat.ColorIndices[i][j] + this->GetPaletteReservedColorCount(); //!< 先頭の透明色を考慮
 							const auto Shift = 7 - j;
 							const auto Mask = 1 << pl;
 							Plane |= ((ColorIndex & Mask) ? 1 : 0) << Shift;
@@ -1672,8 +1672,8 @@ int main(const int argc, const char *argv[])
 		GB,
 		GBC,
 	};
-	std::string Path = ".\\resGB";
-	auto Platform = GB;
+	std::string Path = ".\\resPCE";
+	auto Platform = PCE;
 
 	if (2 < argc) {
 		Path = argv[2];
