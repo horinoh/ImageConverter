@@ -197,7 +197,6 @@ public:
 		for (const auto& p : ColorPatterns) {
 			auto& Pal = Palettes.emplace_back();
 			AddPatternColorToPalette(Pal, p);
-			if (size(Pal) > GetPaletteColorCount() - GetPaletteReservedColorCount()) { std::cerr << "Color Exceed " << size(Pal) << std::endl; }
 
 			std::ranges::sort(Pal);
 		}
@@ -213,7 +212,6 @@ public:
 				AddPatternColorToPalette(Pal, ColorPatterns[c.PatternIndex]);
 			}
 
-			if (size(Pal) > GetPaletteColorCount() - GetPaletteReservedColorCount()) { std::cerr << "Color Exceed " << size(Pal) << std::endl; }
 			std::ranges::sort(Pal);
 		}
 	}
@@ -230,7 +228,6 @@ public:
 				AddPatternColorToPalette(Pal, ColorPatterns[Map[i + 1][j + 0].PatternIndex]);
 				AddPatternColorToPalette(Pal, ColorPatterns[Map[i + 1][j + 1].PatternIndex]);
 
-				if (size(Pal) > GetPaletteColorCount() - GetPaletteReservedColorCount()) { std::cerr << "Color Exceed " << size(Pal) << std::endl; }
 				std::ranges::sort(Pal);
 			}
 		}
@@ -316,31 +313,31 @@ public:
 		}
 
 		//!< パレット番号を詰める
-			{
-				auto SortUnique = PaletteIndices;
-				std::ranges::sort(SortUnique);
-				const auto [B, E] = std::ranges::unique(SortUnique);
-				SortUnique.erase(B, E);
-				for (auto i = 0; i < size(SortUnique); ++i) {
-					std::ranges::replace(PaletteIndices, SortUnique[i], i);
-				}
+		{
+			auto SortUnique = PaletteIndices;
+			std::ranges::sort(SortUnique);
+			const auto [B, E] = std::ranges::unique(SortUnique);
+			SortUnique.erase(B, E);
+			for (auto i = 0; i < size(SortUnique); ++i) {
+				std::ranges::replace(PaletteIndices, SortUnique[i], i);
 			}
-			//!< 空になったパレットは消す
-			{
-				const auto [B, E] = std::ranges::remove_if(Palettes, [](const std::vector<uint32_t>& rhs) { return empty(rhs); });
-				Palettes.erase(B, E);
-			}
+		}
+		//!< 空になったパレットは消す
+		{
+			const auto [B, E] = std::ranges::remove_if(Palettes, [](const std::vector<uint32_t>& rhs) { return empty(rhs); });
+			Palettes.erase(B, E);
+		}
 
-			//!< インデックスカラーのパターンを作成
-			Patterns.clear();
+		//!< インデックスカラーのパターンを作成
+		Patterns.clear();
 #if 1
-			CreatePattern(PaletteIndices);
+		CreatePattern(PaletteIndices);
 #elif 0
-			CreatePatternPerMapRow(PaletteIndices);
+		CreatePatternPerMapRow(PaletteIndices);
 #else
-			CreatePatternPerMap2x2(PaletteIndices);
+		CreatePatternPerMap2x2(PaletteIndices);
 #endif
-			return *this;
+		return *this;
 	}
 #pragma endregion
 
@@ -348,8 +345,7 @@ public:
 	//!< 型を指定してのパレット出力
 	template<typename T>
 	void OutputPaletteOfType(std::string_view Name) const {
-		std::cout << "\tPalette count = " << size(Palettes) << std::endl;
-		if (size(Palettes) > GetPaletteCount()) { std::cerr << "\tPalette Exceed" << std::endl; }
+		std::cout << "\tPalette count = " << size(Palettes) << " / " << GetPaletteCount() << (size(Palettes) > GetPaletteCount() ? " warning" : "") << std::endl;
 
 		std::ofstream OutBin(data(std::string(Name) + ".bin"), std::ios::binary | std::ios::out);
 		assert(!OutBin.bad());
@@ -360,7 +356,8 @@ public:
 		OutText << "const u" << (sizeof(T) << 3) << " " << Name << "[] = {" << std::endl;
 
 		for (auto i : Palettes) {
-			std::cout << "\t\tPalette color count = " << size(i) << std::endl;
+			const auto MaxCount = GetPaletteColorCount() - GetPaletteReservedColorCount();
+			std::cout << "\t\tPalette color count = " << size(i) << " / " << MaxCount << (size(i) > MaxCount ? " warning" : "" ) << std::endl;
 
 			const T TransparentColor = 0; //!< 先頭色 (ここでは 0 としている)
 
@@ -656,8 +653,8 @@ namespace PCE
 			std::ofstream OutText(data(std::string(Name) + ".pal" + ".txt"), std::ios::out);
 			assert(!OutText.bad());
 
-			//OutText << "const " << typeid(uint8_t).name() << " " << Name << "[] = {" << std::endl;
-			OutText << "const u" << (sizeof(uint8_t) << 3) << " " << Name << "[] = {" << std::endl;
+			//OutText << "const " << typeid(uint8_t).name() << " " << Name << "_PAL[] = {" << std::endl;
+			OutText << "const u" << (sizeof(uint8_t) << 3) << " " << Name << "_PAL[] = {" << std::endl;
 
 			for (auto i = 0; i < size(this->Patterns); ++i) {
 				const auto& Pat = this->Patterns[i];
@@ -1483,8 +1480,7 @@ namespace GB
 		}
 
 		virtual const ConverterBase& OutputPalette(std::string_view Name) const override {
-			std::cout << "\tPalette count = " << size(this->Palettes) << std::endl;
-			if (size(this->Palettes) > GetPaletteCount()) { std::cerr << "\tPalette Exceed" << std::endl; }
+			std::cout << "\tPalette count = " << size(this->Palettes) << " / " << GetPaletteCount() << (size(this->Palettes) > GetPaletteCount() ? " warning" : "") << std::endl;
 
 			std::ofstream OutBin(data(std::string(Name) + ".bin"), std::ios::binary | std::ios::out);
 			assert(!OutBin.bad());
@@ -1494,7 +1490,8 @@ namespace GB
 			OutText << "const u" << (sizeof(uint8_t) << 3) << " " << Name << "[] = {" << std::endl;
 
 			for (auto i = 0; i < size(this->Palettes); ++i) {
-				std::cout << "\t\tPalette color count = " << size(this->Palettes[i]) << std::endl;
+				const auto MaxCount = this->GetPaletteColorCount() - this->GetPaletteReservedColorCount();
+				std::cout << "\t\tPalette color count = " << size(this->Palettes[i]) << " / " << MaxCount << (size(this->Palettes[i]) > MaxCount ? " warning" : "") << std::endl;
 
 				const uint8_t TransparentColor = 0; //!< 先頭色 (ここでは 0 としている)
 
