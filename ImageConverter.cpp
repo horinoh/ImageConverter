@@ -649,6 +649,36 @@ namespace PCE
 			this->OutputPaletteOfType<uint16_t>(Name);
 			return *this;
 		}
+		virtual uint8_t PaletteIndexShift() const { return 0; };
+		virtual const ConverterBase& OutputPatternPalette(std::string_view Name) const {
+			std::ofstream OutBin(data(std::string(Name) + ".pal" + ".bin"), std::ios::binary | std::ios::out);
+			assert(!OutBin.bad());
+			std::ofstream OutText(data(std::string(Name) + ".pal" + ".txt"), std::ios::out);
+			assert(!OutText.bad());
+
+			//OutText << "const " << typeid(uint8_t).name() << " " << Name << "[] = {" << std::endl;
+			OutText << "const u" << (sizeof(uint8_t) << 3) << " " << Name << "[] = {" << std::endl;
+
+			for (auto i = 0; i < size(this->Patterns); ++i) {
+				const auto& Pat = this->Patterns[i];
+
+				//!< パターン毎のパレットインデックス (BG では 4 ビットシフトする必要がある)
+				assert(Pat.HasValidPaletteIndex());
+				const uint8_t PalIdx = Pat.PaletteIndex << PaletteIndexShift();
+
+				OutText << "\t0x" << std::hex << std::setw(sizeof(PalIdx) << 1) << std::right << std::setfill('0') << static_cast<uint16_t>(PalIdx);
+				if (size(this->Patterns) - 1 > i) { OutText << ", "; }
+				OutText << std::endl;
+
+				OutBin.write(reinterpret_cast<const char*>(&PalIdx), sizeof(PalIdx));
+			}
+			OutText << "};" << std::endl;
+
+			OutBin.close();
+			OutText.close();
+
+			return *this;
+		}
 	};
 
 	namespace Image
@@ -896,35 +926,7 @@ namespace PCE
 
 				return *this;
 			}
-			virtual const Converter& OutputPatternPalette(std::string_view Name) const {
-				std::ofstream OutBin(data(std::string(Name) + ".pal" + ".bin"), std::ios::binary | std::ios::out);
-				assert(!OutBin.bad());
-				std::ofstream OutText(data(std::string(Name) + ".pal" + ".txt"), std::ios::out);
-				assert(!OutText.bad());
-
-				//OutText << "const " << typeid(uint8_t).name() << " " << Name << "[] = {" << std::endl;
-				OutText << "const u" << (sizeof(uint8_t) << 3) << " " << Name << "[] = {" << std::endl;
-
-				for (auto i = 0; i < size(this->Patterns); ++i) {
-					const auto& Pat = this->Patterns[i];
-
-					//!< パターン毎のパレットインデックス (4 ビットシフトする必要がある)
-					assert(Pat.HasValidPaletteIndex());
-					const uint8_t PalIdx = Pat.PaletteIndex << 4;
-
-					OutText << "\t0x" << std::hex << std::setw(sizeof(PalIdx) << 1) << std::right << std::setfill('0') << static_cast<uint16_t>(PalIdx);
-					if (size(this->Patterns) - 1 > i) { OutText << ", "; }
-					OutText << std::endl;
-
-					OutBin.write(reinterpret_cast<const char*>(&PalIdx), sizeof(PalIdx));
-				}
-				OutText << "};" << std::endl;
-
-				OutBin.close();
-				OutText.close();
-
-				return *this;
-			}
+			virtual uint8_t PaletteIndexShift() const override { return 4; };
 		};
 	}
 
@@ -1039,17 +1041,19 @@ namespace PCE
 			if (!empty(File)) {
 				auto Image = cv::imread(data(File));
 				std::cout << "[ Output Sprite ] " << Name << " (" << File << ")" << std::endl;
+
+				//!< 16x16, 16x32, 16x64, 32x16, 32x32, 32x64, 
 				switch (Width << 3) {
 				case 16:
 					switch (Height << 3) {
 					case 16:
-						Sprite::Converter<16, 16>(Image).Create().OutputPattern(Name).OutputAnimation(Name).RestorePattern();
+						Sprite::Converter<16, 16>(Image).Create().OutputPattern(Name).OutputPatternPalette(Name).OutputAnimation(Name).RestorePattern();
 						break;
 					case 32:
-						Sprite::Converter<16, 32>(Image).Create().OutputPattern(Name).OutputAnimation(Name).RestorePattern();
+						Sprite::Converter<16, 32>(Image).Create().OutputPattern(Name).OutputPatternPalette(Name).OutputAnimation(Name).RestorePattern();
 						break;
 					case 64:
-						Sprite::Converter<16, 64>(Image).Create().OutputPattern(Name).OutputAnimation(Name).RestorePattern();
+						Sprite::Converter<16, 64>(Image).Create().OutputPattern(Name).OutputPatternPalette(Name).OutputAnimation(Name).RestorePattern();
 						break;
 					default:
 						std::cerr << "Sprite size not supported" << std::endl;
@@ -1059,13 +1063,13 @@ namespace PCE
 				case 32:
 					switch (Height << 3) {
 					case 16:
-						Sprite::Converter<32, 16>(Image).Create().OutputPattern(Name).OutputAnimation(Name).RestorePattern();
+						Sprite::Converter<32, 16>(Image).Create().OutputPattern(Name).OutputPatternPalette(Name).OutputAnimation(Name).RestorePattern();
 						break;
 					case 32:
-						Sprite::Converter<32, 32>(Image).Create().OutputPattern(Name).OutputAnimation(Name).RestorePattern();
+						Sprite::Converter<32, 32>(Image).Create().OutputPattern(Name).OutputPatternPalette(Name).OutputAnimation(Name).RestorePattern();
 						break;
 					case 64:
-						Sprite::Converter<32, 64>(Image).Create().OutputPattern(Name).OutputAnimation(Name).RestorePattern();
+						Sprite::Converter<32, 64>(Image).Create().OutputPattern(Name).OutputPatternPalette(Name).OutputAnimation(Name).RestorePattern();
 						break;
 					default:
 						std::cerr << "Sprite size not supported" << std::endl;
@@ -1636,7 +1640,6 @@ namespace GB
 			if (!empty(File)) {
 				auto Image = cv::imread(data(File));
 				std::cout << "[ Output Sprite ] " << Name << " (" << File << ")" << std::endl;
-				std::cout << "[ Output Sprite ] " << Name << " (" << File << ")" << std::endl;
 
 				//!< 8x8 or 8x16
 				switch (Width << 3)
@@ -1672,8 +1675,19 @@ int main(const int argc, const char *argv[])
 		GB,
 		GBC,
 	};
+#ifdef _DEBUG
 	std::string Path = ".\\resPCE";
 	auto Platform = PCE;
+	//std::string Path = ".\\resFC";
+	//auto Platform = FC;
+	//std::string Path = ".\\resGB";
+	//auto Platform = GB;
+	//std::string Path = ".\\resGBC";
+	//auto Platform = GBC;
+#else
+	std::string Path = ".";
+	auto Platform = PCE;
+#endif
 
 	if (2 < argc) {
 		Path = argv[2];
