@@ -1207,7 +1207,10 @@ namespace FC {
 
 		virtual ConverterBase& CreatePattern() override {
 			Super::CreatePattern();
-			assert(size(this->Patterns) <= 256);
+			//assert(size(this->Patterns) <= 256);
+			if (size(this->Patterns) > 256) {
+				std::cerr << "\tPattern count " << size(this->Patterns) << " > 256" << std::endl;
+			}
 			return *this;
 		}
 
@@ -1302,25 +1305,43 @@ namespace FC {
 						const auto LTLB = static_cast<uint8_t>(this->Map[i + 1][j + 0].PatternIndex);
 						const auto LTRB = static_cast<uint8_t>(this->Map[i + 1][j + 1].PatternIndex);
 						//!< 2 x 2 分が同じパレット番号になっていない場合 assert
-						assert(this->Patterns[LTLT].PaletteIndex == this->Patterns[LTRT].PaletteIndex == this->Patterns[LTLB].PaletteIndex == this->Patterns[LTRB].PaletteIndex);
+						//assert(this->Patterns[LTLT].PaletteIndex == this->Patterns[LTRT].PaletteIndex == this->Patterns[LTLB].PaletteIndex == this->Patterns[LTRB].PaletteIndex);
+						if (this->Patterns[LTLT].PaletteIndex != this->Patterns[LTRT].PaletteIndex ||
+							this->Patterns[LTLT].PaletteIndex != this->Patterns[LTLB].PaletteIndex ||
+							this->Patterns[LTLT].PaletteIndex != this->Patterns[LTRB].PaletteIndex) {
+							std::cerr << "\t2x2 is not using same palette index" << std::endl;
+						}
 
 						const auto RTLT = static_cast<uint8_t>(this->Map[i + 0][j + 2].PatternIndex);
 						const auto RTRT = static_cast<uint8_t>(this->Map[i + 0][j + 3].PatternIndex);
 						const auto RTLB = static_cast<uint8_t>(this->Map[i + 1][j + 2].PatternIndex);
 						const auto RTRB = static_cast<uint8_t>(this->Map[i + 1][j + 3].PatternIndex);
-						assert(this->Patterns[RTLT].PaletteIndex == this->Patterns[RTRT].PaletteIndex == this->Patterns[RTLB].PaletteIndex == this->Patterns[RTRB].PaletteIndex);
+						//assert(this->Patterns[RTLT].PaletteIndex == this->Patterns[RTRT].PaletteIndex == this->Patterns[RTLB].PaletteIndex == this->Patterns[RTRB].PaletteIndex);
+						if (this->Patterns[RTLT].PaletteIndex != this->Patterns[RTRT].PaletteIndex ||
+							this->Patterns[RTLT].PaletteIndex != this->Patterns[RTLB].PaletteIndex ||
+							this->Patterns[RTLT].PaletteIndex != this->Patterns[RTRB].PaletteIndex) {
+							std::cerr << "\t2x2 is not using same palette index" << std::endl;
+						}
 
 						const auto LBLT = static_cast<uint8_t>(this->Map[i + 2][j + 0].PatternIndex);
 						const auto LBRT = static_cast<uint8_t>(this->Map[i + 2][j + 1].PatternIndex);
 						const auto LBLB = static_cast<uint8_t>(this->Map[i + 3][j + 0].PatternIndex);
 						const auto LBRB = static_cast<uint8_t>(this->Map[i + 3][j + 1].PatternIndex);
-						assert(this->Patterns[LBLT].PaletteIndex == this->Patterns[LBRT].PaletteIndex == this->Patterns[LBLB].PaletteIndex == this->Patterns[LBRB].PaletteIndex);
+						//assert(this->Patterns[LBLT].PaletteIndex == this->Patterns[LBRT].PaletteIndex == this->Patterns[LBLB].PaletteIndex == this->Patterns[LBRB].PaletteIndex);
+						if (this->Patterns[LBLT].PaletteIndex != this->Patterns[LBRT].PaletteIndex == this->Patterns[LBLB].PaletteIndex == this->Patterns[LBRB].PaletteIndex) {
+							std::cerr << "\t2x2 is not using same palette index" << std::endl;
+						}
 
 						const auto RBLT = static_cast<uint8_t>(this->Map[i + 2][j + 2].PatternIndex);
 						const auto RBRT = static_cast<uint8_t>(this->Map[i + 2][j + 3].PatternIndex);
 						const auto RBLB = static_cast<uint8_t>(this->Map[i + 3][j + 2].PatternIndex);
 						const auto RBRB = static_cast<uint8_t>(this->Map[i + 3][j + 3].PatternIndex);
-						assert(this->Patterns[RBLT].PaletteIndex == this->Patterns[RBRT].PaletteIndex == this->Patterns[RBLB].PaletteIndex == this->Patterns[RBRB].PaletteIndex);
+						//assert(this->Patterns[RBLT].PaletteIndex == this->Patterns[RBRT].PaletteIndex == this->Patterns[RBLB].PaletteIndex == this->Patterns[RBRB].PaletteIndex);
+						if (this->Patterns[RBLT].PaletteIndex != this->Patterns[RBRT].PaletteIndex ||
+							this->Patterns[RBLT].PaletteIndex != this->Patterns[RBLB].PaletteIndex ||
+							this->Patterns[RBLT].PaletteIndex != this->Patterns[RBRB].PaletteIndex) {
+							std::cerr << "\t2x2 is not using same palette index" << std::endl;
+						}
 
 						assert(this->Patterns[RBLT].HasValidPaletteIndex());
 						assert(this->Patterns[LBLT].HasValidPaletteIndex());
@@ -1475,7 +1496,10 @@ namespace GB
 				std::cerr << "Pattern count = " << size(this->Patterns) << " > 128" << std::endl;
 			}
 			//!< 共用分のパターン領域を使用しても足りない
-			assert(size(this->Patterns) <= 256);
+			//assert(size(this->Patterns) <= 256);
+			if (size(this->Patterns) > 256) {
+				std::cerr << "\tPattern count " << size(this->Patterns) << " > 256" << std::endl;
+			}
 			return *this;
 		}
 
@@ -1672,18 +1696,21 @@ int main(const int argc, const char *argv[])
 		GB,
 		GBC,
 	};
-#ifdef _DEBUG
-	std::string Path = ".\\resPCE";
-	auto Platform = PCE;
-	//std::string Path = ".\\resFC";
-	//auto Platform = FC;
-	//std::string Path = ".\\resGB";
-	//auto Platform = GB;
-	//std::string Path = ".\\resGBC";
-	//auto Platform = GBC;
-#else
 	std::string Path = ".";
 	auto Platform = PCE;
+
+#ifdef _DEBUG
+	//Platform = FC;
+	Platform = GB;
+	//Platform = GBC;
+	switch (Platform)
+	{
+	case PCE: Path = ".\\resPCE"; break;
+	case FC:  Path = ".\\resFC"; break;
+	case GB:
+	case GBC: Path = ".\\resGB"; break;
+	default: break;
+	}
 #endif
 
 	if (2 < argc) {
